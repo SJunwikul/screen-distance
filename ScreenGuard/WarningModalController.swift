@@ -1,4 +1,5 @@
 import Cocoa
+import QuartzCore
 
 protocol WarningModalDelegate: AnyObject {
     func modalDidClose()
@@ -11,8 +12,19 @@ class WarningModalController: NSObject {
     private var distanceLabel: NSTextField?
     private var warningLabel: NSTextField?
     private var instructionLabel: NSTextField?
+    private var arasakaLogoLabel: NSTextField?
+    private var statusLabel: NSTextField?
     private var currentDistance: Double = 0
     private var updateTimer: Timer?
+    private var glitchTimer: Timer?
+    private var scanlineView: NSView?
+    private var borderViews: [NSView] = []
+    
+    // Cyberpunk color scheme - Arasaka Red Theme
+    private let arasakaRed = NSColor(red: 1.0, green: 0.0, blue: 0.3, alpha: 1.0)
+    private let arasakaRedDark = NSColor(red: 0.8, green: 0.0, blue: 0.2, alpha: 1.0)
+    private let arasakaDark = NSColor(red: 0.05, green: 0.05, blue: 0.1, alpha: 0.95)
+    private let arasakaGlow = NSColor(red: 1.0, green: 0.0, blue: 0.3, alpha: 0.3)
     
     func showWarning(distance: Double) {
         currentDistance = distance
@@ -65,7 +77,7 @@ class WarningModalController: NSObject {
     }
     
     private func createWarningWindow() {
-        let windowRect = NSRect(x: 0, y: 0, width: 400, height: 300)
+        let windowRect = NSRect(x: 0, y: 0, width: 500, height: 400)
         
         warningWindow = NSWindow(
             contentRect: windowRect,
@@ -76,121 +88,197 @@ class WarningModalController: NSObject {
         
         guard let window = warningWindow else { return }
         
-        window.backgroundColor = NSColor.systemRed.withAlphaComponent(0.95)
+        window.backgroundColor = arasakaDark
         window.isOpaque = false
         window.hasShadow = true
         window.canHide = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         
-        // Create content view
+        // Create content view with cyberpunk styling
         let contentView = NSView(frame: windowRect)
         contentView.wantsLayer = true
-        contentView.layer?.cornerRadius = 20
-        contentView.layer?.masksToBounds = true
+        contentView.layer?.cornerRadius = 0
+        contentView.layer?.masksToBounds = false
+        contentView.layer?.backgroundColor = arasakaDark.cgColor
         
-        // Warning icon
-        let iconView = NSImageView(frame: NSRect(x: 175, y: 220, width: 50, height: 50))
-        iconView.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Warning")
-        iconView.contentTintColor = .white
-        iconView.imageScaling = .scaleProportionallyUpOrDown
+        // Add geometric border elements
+        createCyberpunkBorders(in: contentView)
+        
+        // Add scanline effect
+        createScanlineEffect(in: contentView)
+        
+        // Add glow effect
+        contentView.layer?.shadowColor = arasakaRed.cgColor
+        contentView.layer?.shadowOffset = CGSize.zero
+        contentView.layer?.shadowRadius = 20
+        contentView.layer?.shadowOpacity = 0.5
+        
+        // Arasaka Corporation Header
+        arasakaLogoLabel = NSTextField(frame: NSRect(x: 20, y: 350, width: 460, height: 30))
+        arasakaLogoLabel?.stringValue = "荒坂 ARASAKA CORPORATION"
+        arasakaLogoLabel?.alignment = .center
+        arasakaLogoLabel?.font = NSFont.monospacedSystemFont(ofSize: 16, weight: .bold)
+        arasakaLogoLabel?.textColor = arasakaRed
+        arasakaLogoLabel?.backgroundColor = .clear
+        arasakaLogoLabel?.isBezeled = false
+        arasakaLogoLabel?.isEditable = false
+        arasakaLogoLabel?.isSelectable = false
+        contentView.addSubview(arasakaLogoLabel!)
+        
+        // Status indicator
+        statusLabel = NSTextField(frame: NSRect(x: 20, y: 320, width: 460, height: 20))
+        statusLabel?.stringValue = "[ PROXIMITY ALERT SYSTEM ACTIVE ]"
+        statusLabel?.alignment = .center
+        statusLabel?.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)
+        statusLabel?.textColor = arasakaRed
+        statusLabel?.backgroundColor = .clear
+        statusLabel?.isBezeled = false
+        statusLabel?.isEditable = false
+        statusLabel?.isSelectable = false
+        contentView.addSubview(statusLabel!)
+        
+        // Cyberpunk warning icon (using text)
+        let iconView = NSTextField(frame: NSRect(x: 200, y: 270, width: 100, height: 40))
+        iconView.stringValue = "⚠ 警告 ⚠"
+        iconView.alignment = .center
+        iconView.font = NSFont.monospacedSystemFont(ofSize: 24, weight: .bold)
+        iconView.textColor = arasakaRed
+        iconView.backgroundColor = .clear
+        iconView.isBezeled = false
+        iconView.isEditable = false
+        iconView.isSelectable = false
         contentView.addSubview(iconView)
         
-        // Warning title
-        warningLabel = NSTextField(frame: NSRect(x: 20, y: 180, width: 360, height: 30))
-        warningLabel?.stringValue = "⚠️ TOO CLOSE TO SCREEN!"
+        // Cyberpunk warning title
+        warningLabel = NSTextField(frame: NSRect(x: 20, y: 230, width: 460, height: 30))
+        warningLabel?.stringValue = "CRITICAL PROXIMITY BREACH DETECTED"
         warningLabel?.alignment = .center
-        warningLabel?.font = NSFont.boldSystemFont(ofSize: 20)
-        warningLabel?.textColor = .white
+        warningLabel?.font = NSFont.monospacedSystemFont(ofSize: 18, weight: .bold)
+        warningLabel?.textColor = arasakaRed
         warningLabel?.backgroundColor = .clear
         warningLabel?.isBezeled = false
         warningLabel?.isEditable = false
         warningLabel?.isSelectable = false
         contentView.addSubview(warningLabel!)
         
-        // Distance display
-        distanceLabel = NSTextField(frame: NSRect(x: 20, y: 130, width: 360, height: 40))
-        distanceLabel?.stringValue = "Current Distance: -- cm"
+        // Cyberpunk distance display with frame
+        let distanceFrame = NSView(frame: NSRect(x: 50, y: 150, width: 400, height: 60))
+        distanceFrame.wantsLayer = true
+        distanceFrame.layer?.borderColor = arasakaRed.cgColor
+        distanceFrame.layer?.borderWidth = 2
+        distanceFrame.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
+        contentView.addSubview(distanceFrame)
+        
+        distanceLabel = NSTextField(frame: NSRect(x: 60, y: 165, width: 380, height: 30))
+        distanceLabel?.stringValue = "DISTANCE: -- CM"
         distanceLabel?.alignment = .center
-        distanceLabel?.font = NSFont.monospacedSystemFont(ofSize: 24, weight: .medium)
-        distanceLabel?.textColor = .white
+        distanceLabel?.font = NSFont.monospacedSystemFont(ofSize: 20, weight: .bold)
+        distanceLabel?.textColor = arasakaRed
         distanceLabel?.backgroundColor = .clear
         distanceLabel?.isBezeled = false
         distanceLabel?.isEditable = false
         distanceLabel?.isSelectable = false
         contentView.addSubview(distanceLabel!)
         
-        // Instruction text
-        instructionLabel = NSTextField(frame: NSRect(x: 20, y: 60, width: 360, height: 60))
-        instructionLabel?.stringValue = "Please move back to at least 50cm from your screen.\nThis modal will disappear when you reach a safe distance."
-        instructionLabel?.alignment = .center
-        instructionLabel?.font = NSFont.systemFont(ofSize: 14)
-        instructionLabel?.textColor = .white
+        // Cyberpunk instruction text
+        instructionLabel = NSTextField(frame: NSRect(x: 30, y: 80, width: 440, height: 60))
+        instructionLabel?.stringValue = ">> MAINTAIN MINIMUM 50CM DISTANCE FROM DISPLAY\n>> BIOMETRIC MONITORING: ACTIVE\n>> COMPLIANCE REQUIRED FOR SYSTEM ACCESS"
+        instructionLabel?.alignment = .left
+        instructionLabel?.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)
+        instructionLabel?.textColor = arasakaRedDark
         instructionLabel?.backgroundColor = .clear
         instructionLabel?.isBezeled = false
         instructionLabel?.isEditable = false
         instructionLabel?.isSelectable = false
         instructionLabel?.usesSingleLineMode = false
-        instructionLabel?.maximumNumberOfLines = 3
+        instructionLabel?.maximumNumberOfLines = 4
         contentView.addSubview(instructionLabel!)
         
-        // Health tip
-        let healthTipLabel = NSTextField(frame: NSRect(x: 20, y: 20, width: 360, height: 30))
-        healthTipLabel.stringValue = "💡 Tip: Follow the 20-20-20 rule for better eye health"
-        healthTipLabel.alignment = .center
-        healthTipLabel.font = NSFont.systemFont(ofSize: 12)
-        healthTipLabel.textColor = NSColor.white.withAlphaComponent(0.8)
-        healthTipLabel.backgroundColor = .clear
-        healthTipLabel.isBezeled = false
-        healthTipLabel.isEditable = false
-        healthTipLabel.isSelectable = false
-        contentView.addSubview(healthTipLabel)
+        // Arasaka footer with Japanese text
+        let footerLabel = NSTextField(frame: NSRect(x: 20, y: 30, width: 460, height: 40))
+        footerLabel.stringValue = "健康管理システム - HEALTH MONITORING SYSTEM\n[ AUTHORIZED PERSONNEL ONLY - 認可された職員のみ ]"
+        footerLabel.alignment = .center
+        footerLabel.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+        footerLabel.textColor = arasakaRed.withAlphaComponent(0.7)
+        footerLabel.backgroundColor = .clear
+        footerLabel.isBezeled = false
+        footerLabel.isEditable = false
+        footerLabel.isSelectable = false
+        footerLabel.usesSingleLineMode = false
+        footerLabel.maximumNumberOfLines = 2
+        contentView.addSubview(footerLabel)
         
         window.contentView = contentView
+        
+        // Start cyberpunk effects
+        startCyberpunkEffects()
     }
     
     private func updateDistanceDisplay() {
         guard let distanceLabel = distanceLabel else { return }
         
         DispatchQueue.main.async {
-            let distanceText = String(format: "Current Distance: %.1f cm", self.currentDistance)
+            let distanceText = String(format: "DISTANCE: %.1f CM", self.currentDistance)
             distanceLabel.stringValue = distanceText
             
-            // Change color based on distance
+            // Cyberpunk color coding based on threat level
             if self.currentDistance < 30 {
-                distanceLabel.textColor = NSColor.systemYellow
+                distanceLabel.textColor = self.arasakaRed
+                self.statusLabel?.stringValue = "[ CRITICAL BREACH - IMMEDIATE ACTION REQUIRED ]"
+                self.statusLabel?.textColor = self.arasakaRed
             } else if self.currentDistance < 50 {
-                distanceLabel.textColor = NSColor.systemOrange
+                distanceLabel.textColor = NSColor.systemYellow
+                self.statusLabel?.stringValue = "[ WARNING - PROXIMITY VIOLATION DETECTED ]"
+                self.statusLabel?.textColor = NSColor.systemYellow
             } else {
-                distanceLabel.textColor = NSColor.white
+                distanceLabel.textColor = self.arasakaRedDark
+                self.statusLabel?.stringValue = "[ MONITORING - DISTANCE COMPLIANCE ]"
+                self.statusLabel?.textColor = self.arasakaRedDark
             }
         }
     }
     
     private func startUpdateTimer() {
         stopUpdateTimer()
-        // Only use timer for visual effects like pulsing, distance updates come from delegate
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.pulseWarning()
+        // Timer for cyberpunk visual effects
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
+            self?.cyberpunkPulse()
         }
     }
     
     private func stopUpdateTimer() {
         updateTimer?.invalidate()
         updateTimer = nil
+        glitchTimer?.invalidate()
+        glitchTimer = nil
     }
     
-    private func pulseWarning() {
+    private func cyberpunkPulse() {
         guard let window = warningWindow else { return }
         
+        // Pulse the glow effect
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.5
+            context.duration = 0.4
             context.allowsImplicitAnimation = true
-            window.alphaValue = 0.8
+            window.contentView?.layer?.shadowOpacity = 0.8
         } completionHandler: {
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.5
+                context.duration = 0.4
                 context.allowsImplicitAnimation = true
-                window.alphaValue = 0.95
+                window.contentView?.layer?.shadowOpacity = 0.5
+            }
+        }
+        
+        // Flicker border elements
+        for borderView in self.borderViews {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.1
+                borderView.animator().alphaValue = 0.6
+            } completionHandler: {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.1
+                    borderView.animator().alphaValue = 1.0
+                }
             }
         }
     }
@@ -198,14 +286,22 @@ class WarningModalController: NSObject {
     private func animateWarningAppearance() {
         guard let window = warningWindow else { return }
         
+        // Cyberpunk materialization effect
         window.alphaValue = 0
-        window.setFrame(window.frame.insetBy(dx: 50, dy: 50), display: true)
+        window.contentView?.layer?.transform = CATransform3DMakeScale(0.8, 0.8, 1.0)
+        
+        // Glitch effect on appearance
+        for i in 0..<5 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.05) {
+                window.setFrameOrigin(NSPoint(x: window.frame.origin.x + (i % 2 == 0 ? 2 : -2), y: window.frame.origin.y))
+            }
+        }
         
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.3
+            context.duration = 0.4
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            window.animator().alphaValue = 0.95
-            window.animator().setFrame(window.frame.insetBy(dx: -50, dy: -50), display: true)
+            window.animator().alphaValue = 0.98
+            window.contentView?.layer?.transform = CATransform3DIdentity
         }
     }
     
@@ -215,13 +311,139 @@ class WarningModalController: NSObject {
             return
         }
         
+        // Cyberpunk dematerialization with glitch effect
+        for i in 0..<3 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.03) {
+                window.setFrameOrigin(NSPoint(x: window.frame.origin.x + (i % 2 == 0 ? 5 : -5), y: window.frame.origin.y))
+            }
+        }
+        
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.2
+            context.duration = 0.3
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             window.animator().alphaValue = 0
-            window.animator().setFrame(window.frame.insetBy(dx: 20, dy: 20), display: true)
+            window.contentView?.layer?.transform = CATransform3DMakeScale(0.9, 0.9, 1.0)
         } completionHandler: {
             completion()
+        }
+    }
+    
+    // MARK: - Cyberpunk Visual Effects
+    
+    private func createCyberpunkBorders(in contentView: NSView) {
+        let borderWidth: CGFloat = 3
+        let cornerSize: CGFloat = 30
+        
+        // Top-left corner
+        let topLeftCorner = NSView(frame: NSRect(x: 0, y: contentView.frame.height - cornerSize, width: cornerSize, height: cornerSize))
+        topLeftCorner.wantsLayer = true
+        topLeftCorner.layer?.borderColor = arasakaRed.cgColor
+        topLeftCorner.layer?.borderWidth = borderWidth
+        topLeftCorner.layer?.backgroundColor = NSColor.clear.cgColor
+        contentView.addSubview(topLeftCorner)
+        borderViews.append(topLeftCorner)
+        
+        // Top-right corner
+        let topRightCorner = NSView(frame: NSRect(x: contentView.frame.width - cornerSize, y: contentView.frame.height - cornerSize, width: cornerSize, height: cornerSize))
+        topRightCorner.wantsLayer = true
+        topRightCorner.layer?.borderColor = arasakaRed.cgColor
+        topRightCorner.layer?.borderWidth = borderWidth
+        topRightCorner.layer?.backgroundColor = NSColor.clear.cgColor
+        contentView.addSubview(topRightCorner)
+        borderViews.append(topRightCorner)
+        
+        // Bottom-left corner
+        let bottomLeftCorner = NSView(frame: NSRect(x: 0, y: 0, width: cornerSize, height: cornerSize))
+        bottomLeftCorner.wantsLayer = true
+        bottomLeftCorner.layer?.borderColor = arasakaRed.cgColor
+        bottomLeftCorner.layer?.borderWidth = borderWidth
+        bottomLeftCorner.layer?.backgroundColor = NSColor.clear.cgColor
+        contentView.addSubview(bottomLeftCorner)
+        borderViews.append(bottomLeftCorner)
+        
+        // Bottom-right corner
+        let bottomRightCorner = NSView(frame: NSRect(x: contentView.frame.width - cornerSize, y: 0, width: cornerSize, height: cornerSize))
+        bottomRightCorner.wantsLayer = true
+        bottomRightCorner.layer?.borderColor = arasakaRed.cgColor
+        bottomRightCorner.layer?.borderWidth = borderWidth
+        bottomRightCorner.layer?.backgroundColor = NSColor.clear.cgColor
+        contentView.addSubview(bottomRightCorner)
+        borderViews.append(bottomRightCorner)
+        
+        // Add accent lines
+        let accentLine1 = NSView(frame: NSRect(x: 50, y: contentView.frame.height - 2, width: 100, height: 2))
+        accentLine1.wantsLayer = true
+        accentLine1.layer?.backgroundColor = arasakaRed.cgColor
+        contentView.addSubview(accentLine1)
+        borderViews.append(accentLine1)
+        
+        let accentLine2 = NSView(frame: NSRect(x: contentView.frame.width - 150, y: 0, width: 100, height: 2))
+        accentLine2.wantsLayer = true
+        accentLine2.layer?.backgroundColor = arasakaRed.cgColor
+        contentView.addSubview(accentLine2)
+        borderViews.append(accentLine2)
+    }
+    
+    private func createScanlineEffect(in contentView: NSView) {
+        scanlineView = NSView(frame: NSRect(x: 0, y: 0, width: contentView.frame.width, height: 2))
+        scanlineView?.wantsLayer = true
+        scanlineView?.layer?.backgroundColor = arasakaRed.withAlphaComponent(0.8).cgColor
+        scanlineView?.layer?.shadowColor = arasakaRed.cgColor
+        scanlineView?.layer?.shadowOffset = CGSize.zero
+        scanlineView?.layer?.shadowRadius = 5
+        scanlineView?.layer?.shadowOpacity = 1.0
+        contentView.addSubview(scanlineView!)
+        
+        // Animate scanline
+        animateScanline()
+    }
+    
+    private func animateScanline() {
+        guard let scanlineView = scanlineView else { return }
+        
+        let animation = CABasicAnimation(keyPath: "position.y")
+        animation.fromValue = 0
+        animation.toValue = warningWindow?.frame.height ?? 400
+        animation.duration = 3.0
+        animation.repeatCount = .infinity
+        animation.timingFunction = CAMediaTimingFunction(name: .linear)
+        
+        scanlineView.layer?.add(animation, forKey: "scanline")
+    }
+    
+    private func startCyberpunkEffects() {
+        // Start glitch timer for random glitch effects
+        glitchTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.randomGlitchEffect()
+        }
+    }
+    
+    private func randomGlitchEffect() {
+        guard let window = warningWindow else { return }
+        
+        // Random glitch displacement
+        let originalOrigin = window.frame.origin
+        
+        for i in 0..<8 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.02) {
+                let randomX = originalOrigin.x + CGFloat.random(in: -3...3)
+                let randomY = originalOrigin.y + CGFloat.random(in: -2...2)
+                window.setFrameOrigin(NSPoint(x: randomX, y: randomY))
+            }
+        }
+        
+        // Return to original position
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+            window.setFrameOrigin(originalOrigin)
+        }
+        
+        // Random text glitch on labels
+        if let warningLabel = warningLabel, Bool.random() {
+            let originalText = warningLabel.stringValue
+            warningLabel.stringValue = "C̸R̷I̴T̶I̵C̸A̷L̴ ̶P̵R̴O̸X̷I̵M̶I̵T̶Y̴ ̸B̷R̵E̴A̸C̶H̵"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                warningLabel.stringValue = originalText
+            }
         }
     }
 }

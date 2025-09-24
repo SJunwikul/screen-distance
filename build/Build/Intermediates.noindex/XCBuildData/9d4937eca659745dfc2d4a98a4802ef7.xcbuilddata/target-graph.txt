@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'ScreenGuard' in project 'ScreenGuard' (no dependencies)

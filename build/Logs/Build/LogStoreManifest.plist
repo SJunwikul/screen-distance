@@ -6,7 +6,7 @@
 	<integer>11</integer>
 	<key>logs</key>
 	<dict>
-		<key>B23A7A27-531C-46A3-A4EC-CB21F5EDCABC</key>
+		<key>F04ED2CF-44DF-4F13-90AB-FD63EA9816D8</key>
 		<dict>
 			<key>className</key>
 			<string>IDECommandLineBuildLog</string>
@@ -15,7 +15,7 @@
 			<key>domainType</key>
 			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
 			<key>fileName</key>
-			<string>B23A7A27-531C-46A3-A4EC-CB21F5EDCABC.xcactivitylog</string>
+			<string>F04ED2CF-44DF-4F13-90AB-FD63EA9816D8.xcactivitylog</string>
 			<key>hasPrimaryLog</key>
 			<true/>
 			<key>primaryObservable</key>
@@ -40,13 +40,13 @@
 			<key>signature</key>
 			<string>Building project ScreenGuard with scheme ScreenGuard and configuration Release</string>
 			<key>timeStartedRecording</key>
-			<real>780416367.45049596</real>
+			<real>780422999.56472504</real>
 			<key>timeStoppedRecording</key>
-			<real>780416388.86535299</real>
+			<real>780423024.08061397</real>
 			<key>title</key>
 			<string>Building project ScreenGuard with scheme ScreenGuard and configuration Release</string>
 			<key>uniqueIdentifier</key>
-			<string>B23A7A27-531C-46A3-A4EC-CB21F5EDCABC</string>
+			<string>F04ED2CF-44DF-4F13-90AB-FD63EA9816D8</string>
 		</dict>
 	</dict>
 </dict>
