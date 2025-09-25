@@ -1,10 +1,10 @@
 version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
 options: "b637fe7d58f5b10848a1529305b6aada03d2fd6ead87f7b2ea6b6434278b1d7d"
-build_start_time: [1758730205, 996670000]
-build_end_time: [1758730223, 954558000]
+build_start_time: [1758733285, 612261000]
+build_end_time: [1758733298, 751065000]
 inputs:
   "/Users/ASUS/Documents/Web_Development/screen-distance/ScreenGuard/AppDelegate.swift": [1758730105, 623097275]
   "/Users/ASUS/Documents/Web_Development/screen-distance/ScreenGuard/DistanceMonitor.swift": [1758723557, 804921285]
-  "/Users/ASUS/Documents/Web_Development/screen-distance/ScreenGuard/WarningModalController.swift": [1758730202, 564403968]
+  "/Users/ASUS/Documents/Web_Development/screen-distance/ScreenGuard/WarningModalController.swift": [1758733081, 194389983]
   ? "/Users/ASUS/Documents/Web_Development/screen-distance/build/Build/Intermediates.noindex/ScreenGuard.build/Release/ScreenGuard.build/DerivedSources/GeneratedAssetSymbols.swift"
-  : [1758730203, 766425245]
+  : [1758733283, 308512257]

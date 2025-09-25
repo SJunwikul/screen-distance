@@ -20,9 +20,11 @@ class WarningModalController: NSObject {
     private var scanlineView: NSView?
     private var borderViews: [NSView] = []
     
-    // Cyberpunk color scheme - Arasaka Red Theme
+    // Cyberpunk color scheme - Arasaka Red/Green Theme
     private let arasakaRed = NSColor(red: 1.0, green: 0.0, blue: 0.3, alpha: 1.0)
     private let arasakaRedDark = NSColor(red: 0.8, green: 0.0, blue: 0.2, alpha: 1.0)
+    private let arasakaGreen = NSColor(red: 0.0, green: 1.0, blue: 0.3, alpha: 1.0)
+    private let arasakaGreenDark = NSColor(red: 0.0, green: 0.8, blue: 0.2, alpha: 1.0)
     private let arasakaDark = NSColor(red: 0.05, green: 0.05, blue: 0.1, alpha: 0.95)
     private let arasakaGlow = NSColor(red: 1.0, green: 0.0, blue: 0.3, alpha: 0.3)
     
@@ -226,14 +228,17 @@ class WarningModalController: NSObject {
                 distanceLabel.textColor = self.arasakaRed
                 self.statusLabel?.stringValue = "[ CRITICAL BREACH - IMMEDIATE ACTION REQUIRED ]"
                 self.statusLabel?.textColor = self.arasakaRed
+                self.updateVisualTheme(isWarning: true, isCritical: true)
             } else if self.currentDistance < 50 {
                 distanceLabel.textColor = NSColor.systemYellow
                 self.statusLabel?.stringValue = "[ WARNING - PROXIMITY VIOLATION DETECTED ]"
                 self.statusLabel?.textColor = NSColor.systemYellow
+                self.updateVisualTheme(isWarning: true, isCritical: false)
             } else {
-                distanceLabel.textColor = self.arasakaRedDark
-                self.statusLabel?.stringValue = "[ MONITORING - DISTANCE COMPLIANCE ]"
-                self.statusLabel?.textColor = self.arasakaRedDark
+                distanceLabel.textColor = self.arasakaGreen
+                self.statusLabel?.stringValue = "[ SAFE - DISTANCE COMPLIANCE ACHIEVED ]"
+                self.statusLabel?.textColor = self.arasakaGreen
+                self.updateVisualTheme(isWarning: false, isCritical: false)
             }
         }
     }
@@ -325,6 +330,65 @@ class WarningModalController: NSObject {
             window.contentView?.layer?.transform = CATransform3DMakeScale(0.9, 0.9, 1.0)
         } completionHandler: {
             completion()
+        }
+    }
+    
+    // MARK: - Theme Updates
+    
+    private func updateVisualTheme(isWarning: Bool, isCritical: Bool) {
+        guard let window = warningWindow else { return }
+        
+        let primaryColor: NSColor
+        let secondaryColor: NSColor
+        let glowColor: NSColor
+        
+        if isWarning {
+            primaryColor = arasakaRed
+            secondaryColor = arasakaRedDark
+            glowColor = NSColor(red: 1.0, green: 0.0, blue: 0.3, alpha: 0.3)
+        } else {
+            primaryColor = arasakaGreen
+            secondaryColor = arasakaGreenDark
+            glowColor = NSColor(red: 0.0, green: 1.0, blue: 0.3, alpha: 0.3)
+        }
+        
+        // Update all visual elements
+        DispatchQueue.main.async {
+            // Update header color
+            self.arasakaLogoLabel?.textColor = primaryColor
+            
+            // Update instruction text color
+            self.instructionLabel?.textColor = secondaryColor
+            
+            // Update footer color
+            if let footerViews = window.contentView?.subviews {
+                for view in footerViews {
+                    if let textField = view as? NSTextField,
+                       textField.stringValue.contains("健康管理システム") {
+                        textField.textColor = primaryColor.withAlphaComponent(0.7)
+                    }
+                }
+            }
+            
+            // Update border colors
+            for borderView in self.borderViews {
+                borderView.layer?.borderColor = primaryColor.cgColor
+                if borderView.layer?.backgroundColor != NSColor.clear.cgColor {
+                    borderView.layer?.backgroundColor = primaryColor.cgColor
+                }
+            }
+            
+            // Update distance frame border
+            if let distanceFrame = window.contentView?.subviews.first(where: { $0.frame.height == 60 && $0.layer?.borderWidth == 2 }) {
+                distanceFrame.layer?.borderColor = primaryColor.cgColor
+            }
+            
+            // Update scanline color
+            self.scanlineView?.layer?.backgroundColor = primaryColor.withAlphaComponent(0.8).cgColor
+            self.scanlineView?.layer?.shadowColor = primaryColor.cgColor
+            
+            // Update window glow
+            window.contentView?.layer?.shadowColor = primaryColor.cgColor
         }
     }
     
